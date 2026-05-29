@@ -22,11 +22,13 @@ Add to your `opencode.json`:
 }
 ```
 
-Set your API key (pick one):
+Set your access token:
 
 ```bash
-export JULES_API_KEY="your-api-key"          # or add to .env via .env.example
+export JULES_ACCESS_TOKEN="$(gcloud auth print-access-token)"  # or add to .env
 ```
+
+JULES_API_KEY is also accepted for backward compatibility.
 
 Optionally, set a default source to avoid passing it every time:
 
@@ -59,7 +61,7 @@ Once the plugin and skill are loaded, trigger Jules from opencode:
 
 | Env var | Required | Description |
 |---------|----------|-------------|
-| `JULES_API_KEY` | Yes | API key from jules.google.com/settings/api |
+| `JULES_ACCESS_TOKEN` | Yes | OAuth access token. Get via `gcloud auth print-access-token`. `JULES_API_KEY` also accepted. |
 | `JULES_SOURCE` | No | Default source name (e.g. `sources/github/owner/repo`). Can be set in `.env`. |
 
 ## License
