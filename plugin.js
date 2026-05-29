@@ -107,11 +107,11 @@ export default async ({ directory }) => {
             .optional()
             .describe("Short descriptive title for the session."),
           automationMode: tool.schema
-            .enum(["AUTO_CREATE_PR", "NONE"])
+            .enum(["AUTO_CREATE_PR"])
             .optional()
             .describe(
-              "Whether Jules should auto-create a PR. " +
-              "Use AUTO_CREATE_PR to get results as a pull request."
+              "Set to AUTO_CREATE_PR to have Jules automatically create a pull request. " +
+              "Omit for no automation."
             ),
           requirePlanApproval: tool.schema
             .boolean()
@@ -137,7 +137,7 @@ export default async ({ directory }) => {
           };
           if (branch) body.sourceContext.githubRepoContext.startingBranch = branch;
           if (title) body.title = title;
-          if (automationMode && automationMode !== "NONE") body.automationMode = automationMode;
+          if (automationMode) body.automationMode = automationMode;
           if (requirePlanApproval) body.requirePlanApproval = true;
 
           const result = await julesRequest("POST", "/sessions", body);
@@ -163,12 +163,19 @@ export default async ({ directory }) => {
           sessionId: tool.schema
             .string()
             .describe("The Jules session ID returned by jules_create."),
+          pageToken: tool.schema
+            .string()
+            .optional()
+            .describe("Page token for paginating activities (from a previous jules_status response)."),
         },
         async execute(args) {
-          const { sessionId } = args;
+          const { sessionId, pageToken } = args;
+          const actsQs = new URLSearchParams();
+          actsQs.set("pageSize", "20");
+          if (pageToken) actsQs.set("pageToken", pageToken);
           const [session, activities] = await Promise.all([
             julesRequest("GET", `/sessions/${sessionId}`),
-            julesRequest("GET", `/sessions/${sessionId}/activities?pageSize=20`),
+            julesRequest("GET", `/sessions/${sessionId}/activities?${actsQs.toString()}`),
           ]);
 
           if (session.error) {
@@ -212,6 +219,7 @@ export default async ({ directory }) => {
             prUrl,
             progress: progress.slice(-15),
             activityCount: activities.activities?.length || 0,
+            nextPageToken: activities.nextPageToken || null,
           }, null, 2);
         },
       }),
@@ -224,26 +232,33 @@ export default async ({ directory }) => {
             .number()
             .int()
             .optional()
-            .describe("Number of sessions to list (max 20)."),
+            .describe("Number of sessions to list (max 100, default 30)."),
+          pageToken: tool.schema
+            .string()
+            .optional()
+            .describe("Page token from a previous jules_list response for pagination."),
         },
         async execute(args) {
-          const { pageSize } = args;
-          const result = await julesRequest("GET", `/sessions?pageSize=${pageSize || 10}`);
+          const { pageSize, pageToken } = args;
+          const params = new URLSearchParams();
+          if (pageSize) params.set("pageSize", pageSize);
+          if (pageToken) params.set("pageToken", pageToken);
+          const qs = params.toString();
+          const result = await julesRequest("GET", `/sessions${qs ? "?" + qs : ""}`);
           if (result.error) {
             return `Jules API error (${result.error.status}): ${result.error.body}`;
           }
           if (!result.sessions) return "No Jules sessions found.";
-          return JSON.stringify(
-            result.sessions.map((s) => ({
+          return JSON.stringify({
+            sessions: result.sessions.map((s) => ({
               sessionId: s.id || s.name?.split("/").pop() || "?",
               title: s.title || "(no title)",
               prompt: (s.prompt || "").slice(0, 80),
               prUrl:
                 s.outputs?.find((o) => o.pullRequest)?.pullRequest?.url || null,
             })),
-            null,
-            2
-          );
+            nextPageToken: result.nextPageToken || null,
+          }, null, 2);
         },
       }),
 
@@ -251,22 +266,168 @@ export default async ({ directory }) => {
         description:
           "Lists available GitHub sources (repos) connected to Jules. " +
           "Call this first to discover source names for jules_create.",
-        args: {},
-        async execute() {
-          const result = await julesRequest("GET", "/sources");
+        args: {
+          pageSize: tool.schema
+            .number()
+            .int()
+            .optional()
+            .describe("Number of sources to return (max 100, default 30)."),
+          pageToken: tool.schema
+            .string()
+            .optional()
+            .describe("Page token from a previous jules_list_sources response."),
+          filter: tool.schema
+            .string()
+            .optional()
+            .describe('Filter expression (e.g. "name=sources/github-owner-repo").'),
+        },
+        async execute(args) {
+          const { pageSize, pageToken, filter } = args;
+          const params = new URLSearchParams();
+          if (pageSize) params.set("pageSize", pageSize);
+          if (pageToken) params.set("pageToken", pageToken);
+          if (filter) params.set("filter", filter);
+          const qs = params.toString();
+          const result = await julesRequest("GET", `/sources${qs ? "?" + qs : ""}`);
           if (result.error) {
             return `Jules API error (${result.error.status}): ${result.error.body}`;
           }
           if (!result.sources) return "No sources found. Install the Jules GitHub app first.";
-          return JSON.stringify(
-            result.sources.map((s) => ({
+          return JSON.stringify({
+            sources: result.sources.map((s) => ({
               name: s.name,
               repo: `${s.githubRepo?.owner}/${s.githubRepo?.repo}`,
               defaultBranch: s.githubRepo?.defaultBranch?.displayName || "?",
             })),
-            null,
-            2
-          );
+            nextPageToken: result.nextPageToken || null,
+          }, null, 2);
+        },
+      }),
+
+      jules_delete: tool({
+        description:
+          "Cancels and deletes a Jules session. The session must be in a state that " +
+          "allows deletion (not actively running).",
+        args: {
+          sessionId: tool.schema
+            .string()
+            .describe("The Jules session ID to delete."),
+        },
+        async execute(args) {
+          const { sessionId } = args;
+          const result = await julesRequest("DELETE", `/sessions/${sessionId}`);
+          if (result.error) {
+            return `Jules API error (${result.error.status}): ${result.error.body}`;
+          }
+          return JSON.stringify({ sessionId, deleted: true }, null, 2);
+        },
+      }),
+
+      jules_message: tool({
+        description:
+          "Sends a message from the user to an active Jules session. " +
+          "Use this to provide feedback, answer questions, or give additional " +
+          "instructions while Jules is working.",
+        args: {
+          sessionId: tool.schema
+            .string()
+            .describe("The Jules session ID to send a message to."),
+          prompt: tool.schema
+            .string()
+            .describe("The message to send to Jules."),
+        },
+        async execute(args) {
+          const { sessionId, prompt } = args;
+          const result = await julesRequest("POST", `/sessions/${sessionId}:sendMessage`, { prompt });
+          if (result.error) {
+            return `Jules API error (${result.error.status}): ${result.error.body}`;
+          }
+          return JSON.stringify({ sessionId, sent: true }, null, 2);
+        },
+      }),
+
+      jules_approve: tool({
+        description:
+          "Approves a pending plan in a Jules session. Only needed when the session " +
+          "was created with requirePlanApproval=true.",
+        args: {
+          sessionId: tool.schema
+            .string()
+            .describe("The Jules session ID to approve the plan for."),
+        },
+        async execute(args) {
+          const { sessionId } = args;
+          const result = await julesRequest("POST", `/sessions/${sessionId}:approvePlan`, {});
+          if (result.error) {
+            return `Jules API error (${result.error.status}): ${result.error.body}`;
+          }
+          return JSON.stringify({ sessionId, approved: true }, null, 2);
+        },
+      }),
+
+      jules_activity: tool({
+        description:
+          "Gets a single activity from a Jules session by ID. Returns full activity " +
+          "details including artifacts like code changes (git patches), bash output, " +
+          "or media files.",
+        args: {
+          sessionId: tool.schema
+            .string()
+            .describe("The Jules session ID."),
+          activityId: tool.schema
+            .string()
+            .describe("The activity ID to fetch."),
+        },
+        async execute(args) {
+          const { sessionId, activityId } = args;
+          const result = await julesRequest("GET", `/sessions/${sessionId}/activities/${activityId}`);
+          if (result.error) {
+            return `Jules API error (${result.error.status}): ${result.error.body}`;
+          }
+          return JSON.stringify({
+            id: result.id,
+            originator: result.originator,
+            description: result.description,
+            createTime: result.createTime,
+            planGenerated: result.planGenerated || null,
+            planApproved: result.planApproved || null,
+            userMessaged: result.userMessaged || null,
+            agentMessaged: result.agentMessaged || null,
+            progressUpdated: result.progressUpdated || null,
+            sessionCompleted: result.sessionCompleted || null,
+            sessionFailed: result.sessionFailed || null,
+            artifacts: result.artifacts || [],
+          }, null, 2);
+        },
+      }),
+
+      jules_get_source: tool({
+        description:
+          "Gets detailed information about a single source (GitHub repo) including " +
+          "all available branches. Use this to discover branch names before creating " +
+          "a session.",
+        args: {
+          sourceName: tool.schema
+            .string()
+            .describe(
+              "The source resource name (e.g. 'sources/github-owner-repo') or just " +
+              "the source ID (e.g. 'github-owner-repo')."
+            ),
+        },
+        async execute(args) {
+          const { sourceName } = args;
+          const name = sourceName.startsWith("sources/") ? sourceName : `sources/${sourceName}`;
+          const result = await julesRequest("GET", `/${encodeURIComponent(name)}`);
+          if (result.error) {
+            return `Jules API error (${result.error.status}): ${result.error.body}`;
+          }
+          return JSON.stringify({
+            name: result.name,
+            repo: `${result.githubRepo?.owner}/${result.githubRepo?.repo}`,
+            isPrivate: result.githubRepo?.isPrivate,
+            defaultBranch: result.githubRepo?.defaultBranch?.displayName || "?",
+            branches: (result.githubRepo?.branches || []).map((b) => b.displayName),
+          }, null, 2);
         },
       }),
     },
