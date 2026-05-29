@@ -34,17 +34,6 @@ Optionally, set a default source to avoid passing it every time:
 export JULES_SOURCE="sources/github/owner/repo"  # or add to .env via .env.example
 ```
 
-## Skill setup
-
-The `/jules` skill gives the agent step-by-step instructions. Copy `skill.md` into your skills directory:
-
-```bash
-mkdir -p .opencode/skills/jules/
-cp node_modules/opencode-jules/skill.md .opencode/skills/jules/SKILL.md
-```
-
-Then restart opencode.
-
 ## Usage
 
 Once the plugin and skill are loaded, trigger Jules from opencode:

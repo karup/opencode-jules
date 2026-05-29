@@ -6,7 +6,7 @@
   "type": "module",
   "main": "plugin.js",
   "exports": "./plugin.js",
-  "files": ["plugin.js", "skill.md", "README.md", "LICENSE", ".env.example"],
+  "files": ["plugin.js", "skills/", "README.md", "LICENSE", ".env.example"],
   "keywords": [
     "opencode",
     "opencode-plugin",

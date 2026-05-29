@@ -1,14 +1,7 @@
-// Jules AI Coding Agent — OpenCode plugin
-// Integrates Jules REST API (jules.googleapis.com) for async code reviews,
-// feature work, and bug fixes.
-//
-// Configuration:
-//   JULES_API_KEY — required, from https://jules.google.com/settings/api
-//   JULES_SOURCE  — optional default GitHub source (e.g. sources/github/owner/repo)
-//                   Can also be set in .env or exported in your shell.
-//
-// See https://developers.google.com/jules/api for full API reference.
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const JULES_BASE = "https://jules.googleapis.com/v1alpha";
 
 export const JulesPlugin = async () => {
@@ -37,6 +30,14 @@ export const JulesPlugin = async () => {
   }
 
   return {
+    config: (cfg) => {
+      const skillsPath = join(__dirname, "skills");
+      if (!cfg.skills) cfg.skills = {};
+      if (!cfg.skills.paths) cfg.skills.paths = [];
+      if (!cfg.skills.paths.includes(skillsPath)) {
+        cfg.skills.paths.push(skillsPath);
+      }
+    },
     tool: {
       jules_create: {
         description:
