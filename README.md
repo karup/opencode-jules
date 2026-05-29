@@ -5,7 +5,7 @@ OpenCode plugin for [Jules](https://jules.google.com/) — Google's AI coding ag
 ## Prerequisites
 
 1. **Jules GitHub app** installed on your repos via [jules.google.com](https://jules.google.com)
-2. **API key** from [Jules Settings → API](https://jules.google.com/settings#api)
+2. **API key** from [Jules Settings → API](https://jules.google.com/settings/api)
 3. **OpenCode** with Node.js >= 18
 
 ## Install
@@ -25,13 +25,13 @@ Add to your `opencode.json`:
 Set your API key (pick one):
 
 ```bash
-export JULES_API_KEY="your-api-key"          # or add to .env
+export JULES_API_KEY="your-api-key"          # or add to .env via .env.example
 ```
 
 Optionally, set a default source to avoid passing it every time:
 
 ```bash
-export JULES_SOURCE="sources/github/owner/repo"
+export JULES_SOURCE="sources/github/owner/repo"  # or add to .env via .env.example
 ```
 
 ## Skill setup
@@ -70,8 +70,8 @@ Once the plugin and skill are loaded, trigger Jules from opencode:
 
 | Env var | Required | Description |
 |---------|----------|-------------|
-| `JULES_API_KEY` | Yes | API key from jules.google.com/settings#api |
-| `JULES_SOURCE` | No | Default source name (e.g. `sources/github/owner/repo`) |
+| `JULES_API_KEY` | Yes | API key from jules.google.com/settings/api |
+| `JULES_SOURCE` | No | Default source name (e.g. `sources/github/owner/repo`). Can be set in `.env`. |
 
 ## License
 

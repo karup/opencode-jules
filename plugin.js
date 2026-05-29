@@ -3,8 +3,9 @@
 // feature work, and bug fixes.
 //
 // Configuration:
-//   JULES_API_KEY — required, from https://jules.google.com/settings#api
+//   JULES_API_KEY — required, from https://jules.google.com/settings/api
 //   JULES_SOURCE  — optional default GitHub source (e.g. sources/github/owner/repo)
+//                   Can also be set in .env or exported in your shell.
 //
 // See https://developers.google.com/jules/api for full API reference.
 
