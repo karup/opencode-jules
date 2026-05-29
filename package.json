@@ -1,0 +1,29 @@
+{
+  "name": "opencode-jules",
+  "version": "0.1.0",
+  "description": "OpenCode plugin for Jules — Google's AI coding agent for async PR reviews, feature work, and bug fixes",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "plugin.js",
+  "exports": "./plugin.js",
+  "files": ["plugin.js", "skill.md", "README.md", "LICENSE", ".env.example"],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "jules",
+    "google",
+    "ai",
+    "coding-agent",
+    "code-review",
+    "pr-review",
+    "async-tasks"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/karup/opencode-jules"
+  },
+  "author": "",
+  "engines": {
+    "node": ">=18"
+  }
+}
