@@ -1,17 +1,17 @@
 ---
-name: jules
-description: Delegates any coding task to Jules (Google's AI coding agent) to work asynchronously in the background. Use when the user says /jules, or asks to delegate work, send to Jules, background task, review PR, implement feature, fix bug via Jules. Determines whether the task is a review or feature and configures the session accordingly.
+name: opencode-jules
+description: Delegates any coding task to Jules (Google's AI coding agent) to work asynchronously in the background. Use when the user says /opencode-jules, or asks to delegate work, send to Jules, background task, review PR, implement feature, fix bug via Jules. Determines whether the task is a review or feature and configures the session accordingly.
 ---
 
 # Jules — Background AI Coding Agent
 
-Delegates work to Jules (Google's AI coding agent) via REST API. Jules works **asynchronously** — creates its own branch, implements changes or reviews code, and creates a PR with results. Use `/jules` for any coding task you want done in the background.
+Delegates work to Jules (Google's AI coding agent) via REST API. Jules works **asynchronously** — creates its own branch, implements changes or reviews code, and creates a PR with results. Use `/opencode-jules` for any coding task you want done in the background.
 
-## When to use /jules
+## When to use /opencode-jules
 
-- Reviewing a PR or branch ("/jules review PR 42")
-- Implementing a feature ("/jules implement #23")
-- Fixing a bug ("/jules fix the login redirect bug")
+- Reviewing a PR or branch ("/opencode-jules review PR 42")
+- Implementing a feature ("/opencode-jules implement #23")
+- Fixing a bug ("/opencode-jules fix the login redirect bug")
 - Any coding task where async background work is acceptable
 
 For **PR reviews**, Jules creates a review PR with audit findings.
@@ -100,18 +100,18 @@ When user asks to list active sessions: `jules_list({ pageSize: 10 })`. Show a t
 ## Examples
 
 ```
-/jules review PR 42
+/opencode-jules review PR 42
 → Jules reviewing feat/login-fix. Session: 12345...
 
-/jules implement #23
+/opencode-jules implement #23
 → Reads issue 23, builds prompt, starts Jules session.
 
-/jules fix the login redirect bug
+/opencode-jules fix the login redirect bug
 → Builds prompt with bug details, starts Jules session.
 
-/jules how is session 12345 doing?
+/opencode-jules how is session 12345 doing?
 → Step 4/7: Analyzing auth service... No PR yet.
 
-/jules what sessions are running?
+/opencode-jules what sessions are running?
 → 3 active sessions: review 42 (PR #43), fix login (working)...
 ```

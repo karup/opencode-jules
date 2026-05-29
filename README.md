@@ -39,11 +39,11 @@ export JULES_SOURCE="sources/github/owner/repo"  # or add to .env via .env.examp
 Once the plugin and skill are loaded, trigger Jules from opencode:
 
 ```
-/jules review PR 42          → Reviews a PR, creates an audit PR
-/jules implement #23         → Reads issue 23, implements the feature
-/jules fix login redirect    → Fixes a bug, creates a fix PR
-/jules how is session 123?   → Checks progress of a background session
-/jules what's running?       → Lists all active/inactive Jules sessions
+/opencode-jules review PR 42          → Reviews a PR, creates an audit PR
+/opencode-jules implement #23         → Reads issue 23, implements the feature
+/opencode-jules fix login redirect    → Fixes a bug, creates a fix PR
+/opencode-jules how is session 123?   → Checks progress of a background session
+/opencode-jules what's running?       → Lists all active/inactive Jules sessions
 ```
 
 ## Tools registered
