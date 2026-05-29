@@ -5,7 +5,7 @@ description: Delegates any coding task to Jules (Google's AI coding agent) to wo
 
 # Jules — Background AI Coding Agent
 
-Delegates work to Jules (Google's AI coding agent) via REST API. Jules works **asynchronously** — creates its own branch, implements changes or reviews code, and creates a PR with results. Use `/opencode-jules` for any coding task you want done in the background.
+Delegates work to Jules (Google's AI coding agent) via the **REST API**. Uses an **API key** — no MCP server, no SDK, no binaries. Jules works **asynchronously** — creates its own branch, implements changes or reviews code, and creates a PR with results. Use `/opencode-jules` for any coding task you want done in the background.
 
 ## When to use /opencode-jules
 

@@ -1,6 +1,8 @@
 # opencode-jules
 
-OpenCode plugin for [Jules](https://jules.google.com/) — Google's AI coding agent. Jules works **asynchronously** on your GitHub repos: reviewing PRs, implementing features, and fixing bugs — all in the background.
+OpenCode plugin for [Jules](https://jules.google.com/) — Google's AI coding agent — via the **REST API**. Jules works **asynchronously** on your GitHub repos: reviewing PRs, implementing features, and fixing bugs — all in the background.
+
+> **REST API + API key** — no MCP server, no SDK, no binaries. Just an API key in `.env` and the plugin in `opencode.json`.
 
 ## Prerequisites
 
@@ -80,6 +82,18 @@ Once the plugin and skill are loaded, trigger Jules from opencode:
 |---------|----------|-------------|
 | `JULES_API_KEY` | Yes | API key from jules.google.com/settings/api |
 | `JULES_SOURCE` | No | Default source name (e.g. `sources/github/owner/repo`). Can be set in `.env`. |
+
+## Why opencode-jules vs @google/jules-mcp
+
+| | `@google/jules-mcp` (MCP) | `opencode-jules` (this plugin) |
+|---|---|---|
+| Protocol | MCP server process | **REST API + API key** |
+| Install | MCP config + binary/server | **One line in `opencode.json`** |
+| Runtime | Requires running server process | **No server — HTTP calls** |
+| API coverage | Limited by MCP toolkit | **All 9 REST endpoints** |
+| Auth | MCP auth flow | **API key from `.env`** |
+| Skill | None | **`/opencode-jules` with help, setup, workflows** |
+| Env support | N/A | **Auto-loads `.env` + `shell.env` hook** |
 
 ## License
 
