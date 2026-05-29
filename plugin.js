@@ -2,12 +2,12 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { config as dotenvConfig } from "dotenv";
 
-dotenvConfig();
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const JULES_BASE = "https://jules.googleapis.com/v1alpha";
 
-export const JulesPlugin = async () => {
+export const JulesPlugin = async ({ directory } = {}) => {
+  dotenvConfig({ path: join(directory || process.cwd(), ".env") });
+
   function getKey() {
     return process.env.JULES_API_KEY || process.env.jules_api || "";
   }

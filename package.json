@@ -1,6 +1,6 @@
 {
   "name": "opencode-jules",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "OpenCode plugin for Jules — Google's AI coding agent for async PR reviews, feature work, and bug fixes",
   "license": "Apache-2.0",
   "type": "module",
