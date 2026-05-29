@@ -1,57 +1,55 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { config as dotenvConfig } from "dotenv";
+import { tool } from "@opencode-ai/plugin";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const JULES_BASE = "https://jules.googleapis.com/v1alpha";
 
-export const JulesPlugin = async ({ directory } = {}) => {
-  dotenvConfig({ path: join(directory || process.cwd(), ".env") });
+function getKey() {
+  return process.env.JULES_API_KEY || process.env.jules_api || "";
+}
 
-  function getKey() {
-    return process.env.JULES_API_KEY || process.env.jules_api || "";
-  }
+function getDefaultSource() {
+  return process.env.JULES_SOURCE || "";
+}
 
-  function getDefaultSource() {
-    return process.env.JULES_SOURCE || "";
-  }
-
-  async function julesRequest(method, path, body) {
-    const key = getKey();
-    if (!key) {
-      return {
-        error: {
-          status: 0,
-          body: "JULES_API_KEY is not set. Add it to your .env file or export it in your shell.",
-        },
-      };
-    }
-
-    const url = `${JULES_BASE}${path}`;
-    const headers = {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": key,
+async function julesRequest(method, path, body) {
+  const key = getKey();
+  if (!key) {
+    return {
+      error: {
+        status: 0,
+        body: "JULES_API_KEY is not set. Add it to your .env file or export it in your shell.",
+      },
     };
-    const init = { method, headers };
-    if (body) init.body = JSON.stringify(body);
-
-    try {
-      const res = await fetch(url, init);
-      if (!res.ok) {
-        const text = await res.text();
-        return { error: { status: res.status, body: text } };
-      }
-      return res.json().catch(() => ({ status: "empty" }));
-    } catch (err) {
-      return {
-        error: {
-          status: 0,
-          body: `Network error: ${err.message}`,
-        },
-      };
-    }
   }
 
+  const url = `${JULES_BASE}${path}`;
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Goog-Api-Key": key,
+  };
+  const init = { method, headers };
+  if (body) init.body = JSON.stringify(body);
+
+  try {
+    const res = await fetch(url, init);
+    if (!res.ok) {
+      const text = await res.text();
+      return { error: { status: res.status, body: text } };
+    }
+    return res.json().catch(() => ({ status: "empty" }));
+  } catch (err) {
+    return {
+      error: {
+        status: 0,
+        body: `Network error: ${err.message}`,
+      },
+    };
+  }
+}
+
+export default async ({ directory }) => {
   return {
     config: (cfg) => {
       const skillsPath = join(__dirname, "skills");
@@ -61,58 +59,65 @@ export const JulesPlugin = async ({ directory } = {}) => {
         cfg.skills.paths.push(skillsPath);
       }
     },
+
+    "shell.env": async (_input, output) => {
+      if (process.env.JULES_API_KEY) {
+        output.env.JULES_API_KEY = process.env.JULES_API_KEY;
+      }
+      if (process.env.JULES_SOURCE) {
+        output.env.JULES_SOURCE = process.env.JULES_SOURCE;
+      }
+    },
+
     tool: {
-      jules_create: {
+      jules_create: tool({
         description:
           "Delegates work to Jules (Google's AI coding agent) as a background task. " +
           "Jules will work asynchronously on a GitHub repo. Use this for PR reviews, " +
           "feature implementation, bug fixes, or any coding task you want done in the " +
           "background. Returns a session ID you can poll with jules_status.",
-        parameters: {
-          type: "object",
-          properties: {
-            prompt: {
-              type: "string",
-              description:
-                "Detailed instructions for Jules. Be specific about what to " +
-                "check, review, implement, or fix. Include file paths, acceptance " +
-                "criteria, and any technical constraints.",
-            },
-            source: {
-              type: "string",
-              description:
-                'GitHub source name (e.g. "sources/github/owner/repo"). ' +
-                "Defaults to the JULES_SOURCE env var if set. Run jules_list_sources " +
-                "to see available sources.",
-            },
-            branch: {
-              type: "string",
-              description:
-                "Base branch to work from (e.g. 'main' or 'master'). " +
-                "Omit to use the repo's default branch.",
-            },
-            title: {
-              type: "string",
-              description: "Short descriptive title for the session.",
-            },
-            automationMode: {
-              type: "string",
-              enum: ["AUTO_CREATE_PR", "NONE"],
-              description:
-                "Whether Jules should auto-create a PR. " +
-                "Use AUTO_CREATE_PR to get results as a pull request.",
-              default: "NONE",
-            },
-            requirePlanApproval: {
-              type: "boolean",
-              description:
-                "If true, Jules will ask for plan approval before starting work.",
-              default: false,
-            },
-          },
-          required: ["prompt", "source"],
+        args: {
+          prompt: tool.schema
+            .string()
+            .describe(
+              "Detailed instructions for Jules. Be specific about what to " +
+              "check, review, implement, or fix. Include file paths, acceptance " +
+              "criteria, and any technical constraints."
+            ),
+          source: tool.schema
+            .string()
+            .optional()
+            .describe(
+              'GitHub source name (e.g. "sources/github/owner/repo"). ' +
+              "Defaults to the JULES_SOURCE env var if set. Run jules_list_sources " +
+              "to see available sources."
+            ),
+          branch: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "Base branch to work from (e.g. 'main' or 'master'). " +
+              "Omit to use the repo's default branch."
+            ),
+          title: tool.schema
+            .string()
+            .optional()
+            .describe("Short descriptive title for the session."),
+          automationMode: tool.schema
+            .enum(["AUTO_CREATE_PR", "NONE"])
+            .optional()
+            .describe(
+              "Whether Jules should auto-create a PR. " +
+              "Use AUTO_CREATE_PR to get results as a pull request."
+            ),
+          requirePlanApproval: tool.schema
+            .boolean()
+            .optional()
+            .describe(
+              "If true, Jules will ask for plan approval before starting work."
+            ),
         },
-        execute: async (args) => {
+        async execute(args, context) {
           const { prompt, source, branch, title, automationMode, requirePlanApproval } = args;
           const src = source || getDefaultSource();
           if (!src) {
@@ -145,23 +150,18 @@ export const JulesPlugin = async ({ directory } = {}) => {
             poll: `Call jules_status({ sessionId: "${id}" }) to check progress.`,
           }, null, 2);
         },
-      },
+      }),
 
-      jules_status: {
+      jules_status: tool({
         description:
           "Checks progress of a background Jules session. Returns current activities, " +
           "plan steps, completion status, and any PR URL if one was created.",
-        parameters: {
-          type: "object",
-          properties: {
-            sessionId: {
-              type: "string",
-              description: "The Jules session ID returned by jules_create.",
-            },
-          },
-          required: ["sessionId"],
+        args: {
+          sessionId: tool.schema
+            .string()
+            .describe("The Jules session ID returned by jules_create."),
         },
-        execute: async (args) => {
+        async execute(args) {
           const { sessionId } = args;
           const [session, activities] = await Promise.all([
             julesRequest("GET", `/sessions/${sessionId}`),
@@ -211,22 +211,19 @@ export const JulesPlugin = async ({ directory } = {}) => {
             activityCount: activities.activities?.length || 0,
           }, null, 2);
         },
-      },
+      }),
 
-      jules_list: {
+      jules_list: tool({
         description:
           "Lists recent Jules sessions. Use to see all background tasks and their IDs.",
-        parameters: {
-          type: "object",
-          properties: {
-            pageSize: {
-              type: "integer",
-              description: "Number of sessions to list (max 20).",
-              default: 10,
-            },
-          },
+        args: {
+          pageSize: tool.schema
+            .number()
+            .int()
+            .optional()
+            .describe("Number of sessions to list (max 20)."),
         },
-        execute: async (args) => {
+        async execute(args) {
           const { pageSize } = args;
           const result = await julesRequest("GET", `/sessions?pageSize=${pageSize || 10}`);
           if (result.error) {
@@ -245,17 +242,14 @@ export const JulesPlugin = async ({ directory } = {}) => {
             2
           );
         },
-      },
+      }),
 
-      jules_list_sources: {
+      jules_list_sources: tool({
         description:
           "Lists available GitHub sources (repos) connected to Jules. " +
           "Call this first to discover source names for jules_create.",
-        parameters: {
-          type: "object",
-          properties: {},
-        },
-        execute: async () => {
+        args: {},
+        async execute() {
           const result = await julesRequest("GET", "/sources");
           if (result.error) {
             return `Jules API error (${result.error.status}): ${result.error.body}`;
@@ -271,7 +265,7 @@ export const JulesPlugin = async ({ directory } = {}) => {
             2
           );
         },
-      },
+      }),
     },
   };
 };

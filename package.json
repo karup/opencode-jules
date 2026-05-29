@@ -29,8 +29,8 @@
     "url": "git+https://github.com/karup/opencode-jules.git"
   },
   "author": "Upkar Rai",
-  "dependencies": {
-    "dotenv": "^16.4.7"
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0"
   },
   "engines": {
     "node": ">=18"
