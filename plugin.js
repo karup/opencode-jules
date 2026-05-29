@@ -9,7 +9,7 @@ const JULES_BASE = "https://jules.googleapis.com/v1alpha";
 
 export const JulesPlugin = async () => {
   function getKey() {
-    return process.env.JULES_ACCESS_TOKEN || process.env.JULES_API_KEY || "";
+    return process.env.JULES_API_KEY || process.env.jules_api || "";
   }
 
   function getDefaultSource() {
@@ -17,12 +17,12 @@ export const JulesPlugin = async () => {
   }
 
   async function julesRequest(method, path, body) {
-    const token = getKey();
-    if (!token) {
+    const key = getKey();
+    if (!key) {
       return {
         error: {
           status: 0,
-          body: "JULES_ACCESS_TOKEN is not set. Add it to your .env file or export it in your shell.",
+          body: "JULES_API_KEY is not set. Add it to your .env file or export it in your shell.",
         },
       };
     }
@@ -30,7 +30,7 @@ export const JulesPlugin = async () => {
     const url = `${JULES_BASE}${path}`;
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      "X-Goog-Api-Key": key,
     };
     const init = { method, headers };
     if (body) init.body = JSON.stringify(body);
