@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { tool } from "@opencode-ai/plugin";
+import { config as dotenvConfig } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const JULES_BASE = "https://jules.googleapis.com/v1alpha";
@@ -50,6 +51,8 @@ async function julesRequest(method, path, body) {
 }
 
 export default async ({ directory }) => {
+  dotenvConfig({ path: join(directory, ".env") });
+
   return {
     config: (cfg) => {
       const skillsPath = join(__dirname, "skills");
