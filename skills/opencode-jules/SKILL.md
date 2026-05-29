@@ -17,6 +17,20 @@ Delegates work to Jules (Google's AI coding agent) via REST API. Jules works **a
 For **PR reviews**, Jules creates a review PR with audit findings.
 For **feature/bug work**, Jules implements changes and creates a feature PR.
 
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `jules_create` | Create a new session with a prompt and source |
+| `jules_status` | Check session progress, plan steps, PR URL |
+| `jules_list` | List recent sessions |
+| `jules_delete` | Cancel and delete a session |
+| `jules_message` | Send feedback or instructions to an active session |
+| `jules_approve` | Approve a pending plan (when requirePlanApproval was set) |
+| `jules_activity` | Get a single activity with artifacts (git patches, bash output, media) |
+| `jules_list_sources` | List available GitHub repos |
+| `jules_get_source` | Get details for a single source including all branches |
+
 ## Workflow
 
 ### Step 1 — Gather context
@@ -70,6 +84,8 @@ If this is the first call: use `jules_list_sources` to find available repos.
 
 If `JULES_SOURCE` env var is set, use it directly. Otherwise, find the matching source from the list.
 
+Use `jules_get_source({ sourceName: "..." })` to see all available branches for a specific repo.
+
 ### Step 5 — Call `jules_create`
 
 ```json
@@ -93,9 +109,17 @@ Check progress anytime by asking — no special command needed.
 
 ### Step 7 — Follow-up
 
-When user asks for status: `jules_status({ sessionId })`. Report progress, completion state, and PR URL.
+**When user asks for status:** `jules_status({ sessionId })`. Report progress, completion state, and PR URL.
 
-When user asks to list active sessions: `jules_list({ pageSize: 10 })`. Show a table with titles and PR URLs.
+**When user asks to list active sessions:** `jules_list({ pageSize: 10 })`. Show a table with titles and PR URLs.
+
+**When user wants to cancel:** `jules_delete({ sessionId })`. Confirm deletion.
+
+**When user wants to send feedback to an active session:** `jules_message({ sessionId, prompt: "..." })`. Useful when Jules asks questions or needs clarification.
+
+**When user needs to approve a plan:** `jules_approve({ sessionId })`. Only needed if the session was created with `requirePlanApproval: true`.
+
+**When user wants to see detailed activity (with code changes):** `jules_activity({ sessionId, activityId })`. Returns git patches, bash output, and media files from a specific activity.
 
 ## Examples
 
@@ -114,4 +138,16 @@ When user asks to list active sessions: `jules_list({ pageSize: 10 })`. Show a t
 
 /opencode-jules what sessions are running?
 → 3 active sessions: review 42 (PR #43), fix login (working)...
+
+/opencode-jules cancel session 12345
+→ Deletes the session.
+
+/opencode-jules tell session 12345 to also add integration tests
+→ Sends a message to the active Jules session.
+
+/opencode-jules approve plan for session 12345
+→ Approves the pending plan so Jules can start working.
+
+/opencode-jules show me the code changes from activity act2 in session 12345
+→ Fetches and displays the git patch from the activity.
 ```
