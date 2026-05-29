@@ -1,5 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { config as dotenvConfig } from "dotenv";
+
+dotenvConfig();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const JULES_BASE = "https://jules.googleapis.com/v1alpha";
@@ -14,19 +17,39 @@ export const JulesPlugin = async () => {
   }
 
   async function julesRequest(method, path, body) {
+    const key = getKey();
+    if (!key) {
+      return {
+        error: {
+          status: 0,
+          body: "JULES_API_KEY is not set. Add it to your .env file or export it in your shell.",
+        },
+      };
+    }
+
     const url = `${JULES_BASE}${path}`;
     const headers = {
       "Content-Type": "application/json",
-      "X-Goog-Api-Key": getKey(),
+      "X-Goog-Api-Key": key,
     };
     const init = { method, headers };
     if (body) init.body = JSON.stringify(body);
-    const res = await fetch(url, init);
-    if (!res.ok) {
-      const text = await res.text();
-      return { error: { status: res.status, body: text } };
+
+    try {
+      const res = await fetch(url, init);
+      if (!res.ok) {
+        const text = await res.text();
+        return { error: { status: res.status, body: text } };
+      }
+      return res.json().catch(() => ({ status: "empty" }));
+    } catch (err) {
+      return {
+        error: {
+          status: 0,
+          body: `Network error: ${err.message}`,
+        },
+      };
     }
-    return res.json().catch(() => ({ status: "empty" }));
   }
 
   return {
@@ -150,6 +173,10 @@ export const JulesPlugin = async () => {
           }
 
           const progress = [];
+          if (activities.error) {
+            progress.push(`[WARNING] Could not fetch activities: ${activities.error.body}`);
+          }
+
           let prUrl = null;
           let completed = false;
 
