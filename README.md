@@ -1,6 +1,6 @@
 # opencode-jules
 
-OpenCode plugin for [Jules](https://jules.google.com/) — Google's AI coding agent — via the **REST API**. Jules works **asynchronously** on your GitHub repos: reviewing PRs, implementing features, and fixing bugs — all in the background.
+OpenCode **REST** plugin for [Jules](https://jules.google.com/) — Google's AI coding agent — via the **REST API**. Jules works **asynchronously** on your GitHub repos: reviewing PRs, implementing features, and fixing bugs — all in the background.
 
 > **REST API + API key** — no MCP server, no SDK, no binaries. Just an API key in `.env` and the plugin in `opencode.json`.
 
