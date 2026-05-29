@@ -62,6 +62,29 @@ Once the plugin and skill are loaded, trigger Jules from opencode:
 /opencode-jules approve plan session 123      → Approves a pending plan
 ```
 
+### Example session
+
+```
+tell opencode-jules to do a review of the main branch for this repo
+
+→ Skill "opencode-jules"
+- Thought: The user wants me to have Jules review the main branch (main) of the repo. Let me first discover the source, then create a review session.
+⚙ jules_list_sources
++ Thought: 933ms
+⚙ jules_create [prompt=Review the code in the main branch. Check for:
+- Bugs and logic errors
+- Security vulnerabilities (token/auth handling, input validation)
+- Missing tests or test coverage gaps
+- Missing type safety or incorrect types
+- Violations of project conventions and style guides
+- Duplicate or extractable code
+- Concurrency issues (race conditions, missing guards)
+- Missing error handling
+Be thorough and specific. Include file paths and line numbers in findings., source=sources/github/owner/repo, branch=main, title=Code review of repo main branch, automationMode=AUTO_CREATE_PR]
++ Thought: 4ms
+Jules session a1b2c3d4 started — Code review of repo main branch.
+Jules will review the main branch for bugs, security issues, missing tests, type safety, and more, then create a PR with findings. Ask me anytime to check progress.```
+
 ## Tools registered
 
 | Tool | Endpoint | Description |
