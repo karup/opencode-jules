@@ -17,6 +17,74 @@ Delegates work to Jules (Google's AI coding agent) via REST API. Jules works **a
 For **PR reviews**, Jules creates a review PR with audit findings.
 For **feature/bug work**, Jules implements changes and creates a feature PR.
 
+## Help & Setup
+
+When the user says any of these patterns, respond with the matching section below — do NOT start a Jules session:
+
+- `/opencode-jules help` or `/opencode-jules` (with no task) → general help
+- `/opencode-jules help setup` or `/opencode-jules setup` → setup guide
+- `/opencode-jules help commands` or `/opencode-jules commands` → full command list
+
+### General help
+
+Respond with:
+
+```
+Jules is Google's AI coding agent that works asynchronously on GitHub repos —
+reviewing PRs, implementing features, and fixing bugs. Create a session,
+walk away, get a PR when it's done.
+
+Available tools:
+  jules_create          → Start a new task
+  jules_status          → Check progress
+  jules_list            → List all sessions
+  jules_delete          → Cancel a session
+  jules_message         → Send feedback to active session
+  jules_approve         → Approve a pending plan
+  jules_activity        → Get code changes / artifacts
+  jules_list_sources    → List available repos
+  jules_get_source      → Get repo details + branches
+
+Try /opencode-jules help setup to get started.
+Try /opencode-jules help commands for detailed usage.
+```
+
+### Setup guide
+
+Respond with:
+
+```
+1. Get an API key: https://jules.google.com/settings/api
+2. Create .env in your project root:
+     cp .opencode/node_modules/opencode-jules/.env.example .env
+     # Edit .env and set JULES_API_KEY=your-key
+   (Or just run: export JULES_API_KEY="your-key")
+3. Add the plugin to opencode.json:
+     { "plugin": ["opencode-jules"] }
+4. If the /opencode-jules skill doesn't appear after restart, add:
+     { "skills": { "paths": [".opencode/node_modules/opencode-jules/skills"] } }
+5. Restart opencode.
+6. Run /opencode-jules list sources → to see connected repos.
+7. (Optional) Set JULES_SOURCE in .env as your default repo.
+Ready! Try /opencode-jules implement a simple test to verify.
+```
+
+### Full command list
+
+Respond with:
+
+| Tool | Args | Description |
+|------|------|-------------|
+| jules_create | prompt, source*, branch, title, automationMode, requirePlanApproval | Start a new task (*required) |
+| jules_status | sessionId, pageToken | Check progress + view plan |
+| jules_list | pageSize, pageToken | List all sessions |
+| jules_delete | sessionId | Cancel a session |
+| jules_message | sessionId, prompt | Send feedback to Jules |
+| jules_approve | sessionId | Approve pending plan |
+| jules_activity | sessionId, activityId | View code changes / artifacts |
+| jules_list_sources | pageSize, pageToken, filter | List connected repos |
+| jules_get_source | sourceName | Get repo details + branches |
+
 ## Available Tools
 
 | Tool | Description |
