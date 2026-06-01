@@ -57,6 +57,8 @@ Respond with:
 1. Get an API key: https://jules.google.com/settings/api
 2. Create .env in your project root:
      cp .opencode/node_modules/opencode-jules/.env.example .env
+     # Or for global installs:
+     # cp ~/.config/opencode/node_modules/opencode-jules/.env.example .env
      # Edit .env and set JULES_API_KEY=your-key
    (Or just run: export JULES_API_KEY="your-key")
 3. Add the plugin to opencode.json:

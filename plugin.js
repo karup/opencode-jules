@@ -157,8 +157,9 @@ export default async ({ directory }) => {
 
       jules_status: tool({
         description:
-          "Checks progress of a background Jules session. Returns current activities, " +
-          "plan steps, completion status, and any PR URL if one was created.",
+          "Checks progress of a background Jules session. Returns current state, " +
+          "activity timeline (messages, plan steps, progress, failures), " +
+          "artifacts summary (code patches, bash output), PR URL, and completion status.",
         args: {
           sessionId: tool.schema
             .string()
@@ -182,32 +183,74 @@ export default async ({ directory }) => {
             return `Jules API error (${session.error.status}): ${session.error.body}`;
           }
 
-          const progress = [];
+          const timeline = [];
           if (activities.error) {
-            progress.push(`[WARNING] Could not fetch activities: ${activities.error.body}`);
+            timeline.push(`[WARNING] Could not fetch activities: ${activities.error.body}`);
           }
 
           let prUrl = null;
+          let prTitle = null;
+          let prDescription = null;
           let completed = false;
+          let failed = false;
+          let failedReason = null;
 
           if (session.outputs) {
             for (const out of session.outputs) {
-              if (out.pullRequest) prUrl = out.pullRequest.url;
+              if (out.pullRequest) {
+                prUrl = out.pullRequest.url;
+                prTitle = out.pullRequest.title;
+                prDescription = out.pullRequest.description;
+              }
             }
           }
 
           if (activities.activities) {
             for (const act of activities.activities) {
-              if (act.sessionCompleted) completed = true;
+              const ts = act.createTime ? act.createTime.slice(11, 19) : "";
               if (act.planGenerated) {
-                progress.push("[PLAN]");
+                timeline.push(`[PLAN] ${ts} ${act.description || "Plan generated"}`);
                 for (const step of act.planGenerated.plan.steps || []) {
-                  progress.push(`  ${step.index || "?"}. ${step.title}`);
+                  timeline.push(`  Step ${step.index || "?"}: ${step.title}`);
                 }
               }
+              if (act.planApproved) {
+                timeline.push(`[PLAN_APPROVED] ${ts} Plan ${act.planApproved.planId} approved`);
+              }
               if (act.progressUpdated) {
-                const status = act.progressUpdated.title || act.progressUpdated.description || "";
-                if (status) progress.push(`[WORKING] ${status}`);
+                const title = act.progressUpdated.title || act.progressUpdated.description || act.description || "";
+                if (title) timeline.push(`[WORKING] ${ts} ${title}`);
+              }
+              if (act.agentMessaged) {
+                timeline.push(`[AGENT] ${ts} ${act.agentMessaged.agentMessage}`);
+              }
+              if (act.userMessaged) {
+                timeline.push(`[USER] ${ts} ${act.userMessaged.userMessage}`);
+              }
+              if (act.sessionCompleted) {
+                completed = true;
+                timeline.push(`[COMPLETED] ${ts} Session finished`);
+              }
+              if (act.sessionFailed) {
+                failed = true;
+                failedReason = act.sessionFailed.reason;
+                timeline.push(`[FAILED] ${ts} ${act.sessionFailed.reason}`);
+              }
+              if (act.artifacts?.length) {
+                for (const a of act.artifacts) {
+                  if (a.changeSet?.gitPatch) {
+                    const lines = a.changeSet.gitPatch.unidiffPatch?.split("\n").length || "?";
+                    timeline.push(`[ARTIFACT] ${ts} Git patch — ${lines} lines`);
+                  }
+                  if (a.bashOutput) {
+                    const cmd = a.bashOutput.command;
+                    const code = a.bashOutput.exitCode;
+                    timeline.push(`[ARTIFACT] ${ts} bash: \`${cmd}\` (exit ${code})`);
+                  }
+                  if (a.media) {
+                    timeline.push(`[ARTIFACT] ${ts} Media: ${a.media.mimeType}`);
+                  }
+                }
               }
             }
           }
@@ -215,9 +258,16 @@ export default async ({ directory }) => {
           return JSON.stringify({
             sessionId,
             title: session.title || "(no title)",
+            state: session.state || "UNKNOWN",
+            createTime: session.createTime || null,
+            updateTime: session.updateTime || null,
             completed,
+            failed,
+            failedReason,
             prUrl,
-            progress: progress.slice(-15),
+            prTitle,
+            prDescription,
+            timeline: timeline.slice(-30),
             activityCount: activities.activities?.length || 0,
             nextPageToken: activities.nextPageToken || null,
           }, null, 2);
@@ -253,7 +303,10 @@ export default async ({ directory }) => {
             sessions: result.sessions.map((s) => ({
               sessionId: s.id || s.name?.split("/").pop() || "?",
               title: s.title || "(no title)",
+              state: s.state || "UNKNOWN",
               prompt: (s.prompt || "").slice(0, 80),
+              createTime: s.createTime || null,
+              updateTime: s.updateTime || null,
               prUrl:
                 s.outputs?.find((o) => o.pullRequest)?.pullRequest?.url || null,
             })),
@@ -296,7 +349,9 @@ export default async ({ directory }) => {
           return JSON.stringify({
             sources: result.sources.map((s) => ({
               name: s.name,
+              id: s.id,
               repo: `${s.githubRepo?.owner}/${s.githubRepo?.repo}`,
+              isPrivate: s.githubRepo?.isPrivate,
               defaultBranch: s.githubRepo?.defaultBranch?.displayName || "?",
             })),
             nextPageToken: result.nextPageToken || null,
@@ -416,8 +471,8 @@ export default async ({ directory }) => {
         },
         async execute(args) {
           const { sourceName } = args;
-          const name = sourceName.startsWith("sources/") ? sourceName : `sources/${sourceName}`;
-          const result = await julesRequest("GET", `/${encodeURIComponent(name)}`);
+          const sourceId = sourceName.startsWith("sources/") ? sourceName.replace("sources/", "") : sourceName;
+          const result = await julesRequest("GET", `/sources/${sourceId}`);
           if (result.error) {
             return `Jules API error (${result.error.status}): ${result.error.body}`;
           }
