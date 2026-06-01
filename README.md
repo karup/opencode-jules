@@ -84,6 +84,7 @@ Be thorough and specific. Include file paths and line numbers in findings., sour
 + Thought: 4ms
 Jules session a1b2c3d4 started — Code review of repo main branch.
 Jules will review the main branch for bugs, security issues, missing tests, type safety, and more, then create a PR with findings. Ask me anytime to check progress.```
+```
 
 ## Tools registered
 
